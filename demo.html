@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Physics JSX Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d0d12;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+        }
+
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .title h1 {
+            font-size: 1.25rem;
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: #e8e4f0;
+            margin-bottom: 6px;
+        }
+
+        .title p {
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(200, 180, 220, 0.5);
+        }
+
+        .controls {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 220px;
+            background: rgba(20, 18, 28, 0.9);
+            border: 1px solid rgba(100, 80, 140, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+        }
+
+        .controls h2 {
+            font-size: 0.7rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: rgba(180, 160, 200, 0.8);
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(100, 80, 140, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .control-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(160, 140, 180, 0.7);
+        }
+
+        .control-value {
+            font-size: 0.65rem;
+            color: rgba(200, 180, 220, 0.9);
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #2a2540;
+            border-radius: 2px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #8866aa;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #aa88cc;
+        }
+
+        .checkbox-group {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(100, 80, 140, 0.3);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-label input {
+            width: 14px;
+            height: 14px;
+            accent-color: #8866aa;
+            cursor: pointer;
+        }
+
+        .checkbox-label span {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(160, 140, 180, 0.7);
+        }
+
+        .info {
+            position: absolute;
+            right: 16px;
+            bottom: 16px;
+            text-align: right;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .info p {
+            font-size: 0.7rem;
+            color: rgba(140, 120, 160, 0.6);
+            line-height: 1.6;
+        }
+
+        .presets {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(100, 80, 140, 0.3);
+        }
+
+        .presets h3 {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(160, 140, 180, 0.7);
+            margin-bottom: 8px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            padding: 6px 10px;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(100, 80, 140, 0.2);
+            border: 1px solid rgba(100, 80, 140, 0.3);
+            border-radius: 4px;
+            color: rgba(200, 180, 220, 0.8);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(100, 80, 140, 0.4);
+            border-color: rgba(136, 102, 170, 0.6);
+        }
+
+        .github-link {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+        }
+
+        .github-link a {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(100, 80, 140, 0.2);
+            border: 1px solid rgba(100, 80, 140, 0.3);
+            border-radius: 6px;
+            color: rgba(200, 180, 220, 0.8);
+            text-decoration: none;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+
+        .github-link a:hover {
+            background: rgba(100, 80, 140, 0.4);
+            border-color: rgba(136, 102, 170, 0.6);
+        }
+
+        .github-link svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-container"></div>
+
+        <div class="title">
+            <h1>Cloth Physics Demo</h1>
+            <p>Drag the pink spheres to move attachment points</p>
+        </div>
+
+        <div class="github-link">
+            <a href="https://github.com/MushroomFleet/ClothPhysics-JSX" target="_blank" rel="noopener">
+                <svg viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                GitHub
+            </a>
+        </div>
+
+        <div class="controls">
+            <h2>Physics Parameters</h2>
+            
+            <div class="control-group">
+                <div class="control-header">
+                    <span class="control-label">Gravity</span>
+                    <span class="control-value" id="gravity-value">15.0</span>
+                </div>
+                <input type="range" id="gravity" min="0" max="40" step="1" value="15">
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <span class="control-label">Wind</span>
+                    <span class="control-value" id="wind-value">3.0</span>
+                </div>
+                <input type="range" id="wind" min="0" max="15" step="0.5" value="3">
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <span class="control-label">Stiffness</span>
+                    <span class="control-value" id="stiffness-value">0.90</span>
+                </div>
+                <input type="range" id="stiffness" min="0.3" max="1" step="0.05" value="0.9">
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <span class="control-label">Damping</span>
+                    <span class="control-value" id="damping-value">0.98</span>
+                </div>
+                <input type="range" id="damping" min="0.9" max="0.995" step="0.005" value="0.98">
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <span class="control-label">Solver Iterations</span>
+                    <span class="control-value" id="iterations-value">8</span>
+                </div>
+                <input type="range" id="iterations" min="1" max="20" step="1" value="8">
+            </div>
+
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="showParticles">
+                    <span>Show Particles</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="showConstraints">
+                    <span>Show Constraints</span>
+                </label>
+            </div>
+
+            <div class="presets">
+                <h3>Presets</h3>
+                <div class="preset-buttons">
+                    <button class="preset-btn" data-preset="silk">Silk</button>
+                    <button class="preset-btn" data-preset="heavy">Heavy</button>
+                    <button class="preset-btn" data-preset="windy">Windy</button>
+                    <button class="preset-btn" data-preset="stiff">Stiff</button>
+                    <button class="preset-btn" data-preset="default">Default</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info">
+            <p>12×18 particle grid</p>
+            <p>Verlet integration + constraint solving</p>
+            <p>Structural + shear + bending constraints</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const config = {
+            gravity: 15,
+            windStrength: 3,
+            stiffness: 0.9,
+            damping: 0.98,
+            iterations: 8,
+            showParticles: false,
+            showConstraints: false
+        };
+
+        // Presets
+        const presets = {
+            silk: { gravity: 8, windStrength: 6, stiffness: 0.6, damping: 0.99, iterations: 12 },
+            heavy: { gravity: 30, windStrength: 2, stiffness: 0.95, damping: 0.96, iterations: 10 },
+            windy: { gravity: 12, windStrength: 12, stiffness: 0.85, damping: 0.97, iterations: 8 },
+            stiff: { gravity: 15, windStrength: 3, stiffness: 1.0, damping: 0.98, iterations: 15 },
+            default: { gravity: 15, windStrength: 3, stiffness: 0.9, damping: 0.98, iterations: 8 }
+        };
+
+        // Scene setup
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0d0d12);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 4);
+        camera.lookAt(0, -0.5, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Lighting
+        scene.add(new THREE.AmbientLight(0x404050, 0.8));
+        const keyLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+        keyLight.position.set(3, 5, 4);
+        scene.add(keyLight);
+        const rimLight = new THREE.DirectionalLight(0x4466ff, 0.6);
+        rimLight.position.set(-3, 2, -2);
+        scene.add(rimLight);
+
+        // Shoulder attachment points
+        const shoulderGeo = new THREE.SphereGeometry(0.04, 16, 16);
+        const shoulderMat = new THREE.MeshStandardMaterial({ 
+            color: 0xff4488, 
+            emissive: 0xff2266,
+            emissiveIntensity: 0.3 
+        });
+
+        const leftShoulder = new THREE.Mesh(shoulderGeo, shoulderMat);
+        const rightShoulder = new THREE.Mesh(shoulderGeo, shoulderMat);
+        leftShoulder.position.set(-0.4, 0.8, 0);
+        rightShoulder.position.set(0.4, 0.8, 0);
+        scene.add(leftShoulder);
+        scene.add(rightShoulder);
+
+        // Cloth system
+        const WIDTH = 0.8;
+        const HEIGHT = 1.2;
+        const SEGMENTS_X = 12;
+        const SEGMENTS_Y = 18;
+        const particles = [];
+        const constraints = [];
+
+        // Particle class
+        class Particle {
+            constructor(x, y, z, pinned = false) {
+                this.position = new THREE.Vector3(x, y, z);
+                this.previous = new THREE.Vector3(x, y, z);
+                this.acceleration = new THREE.Vector3();
+                this.pinned = pinned;
+            }
+
+            applyForce(force) {
+                if (!this.pinned) this.acceleration.add(force);
+            }
+
+            update(damping) {
+                if (this.pinned) return;
+                const velocity = this.position.clone().sub(this.previous).multiplyScalar(damping);
+                this.previous.copy(this.position);
+                this.position.add(velocity).add(this.acceleration);
+                this.acceleration.set(0, 0, 0);
+            }
+        }
+
+        // Create particles
+        const spacingX = WIDTH / SEGMENTS_X;
+        const spacingY = HEIGHT / SEGMENTS_Y;
+
+        for (let y = 0; y <= SEGMENTS_Y; y++) {
+            for (let x = 0; x <= SEGMENTS_X; x++) {
+                const isLeftPin = y === 0 && x <= 2;
+                const isRightPin = y === 0 && x >= SEGMENTS_X - 2;
+                particles.push(new Particle(
+                    (x - SEGMENTS_X / 2) * spacingX,
+                    -y * spacingY,
+                    0,
+                    isLeftPin || isRightPin
+                ));
+            }
+        }
+
+        // Helper to get particle
+        function getParticle(x, y) {
+            if (x < 0 || x > SEGMENTS_X || y < 0 || y > SEGMENTS_Y) return null;
+            return particles[y * (SEGMENTS_X + 1) + x];
+        }
+
+        // Create constraints
+        for (let y = 0; y <= SEGMENTS_Y; y++) {
+            for (let x = 0; x <= SEGMENTS_X; x++) {
+                const p = getParticle(x, y);
+                const right = getParticle(x + 1, y);
+                const down = getParticle(x, y + 1);
+                const diagDR = getParticle(x + 1, y + 1);
+                const diagDL = getParticle(x - 1, y + 1);
+                const right2 = getParticle(x + 2, y);
+                const down2 = getParticle(x, y + 2);
+
+                // Structural
+                if (right) constraints.push({ p1: p, p2: right, restLength: spacingX, stiffness: 1.0 });
+                if (down) constraints.push({ p1: p, p2: down, restLength: spacingY, stiffness: 1.0 });
+                // Shear
+                if (diagDR) constraints.push({ p1: p, p2: diagDR, restLength: Math.sqrt(spacingX * spacingX + spacingY * spacingY), stiffness: 0.8 });
+                if (diagDL) constraints.push({ p1: p, p2: diagDL, restLength: Math.sqrt(spacingX * spacingX + spacingY * spacingY), stiffness: 0.8 });
+                // Bending
+                if (right2) constraints.push({ p1: p, p2: right2, restLength: spacingX * 2, stiffness: 0.5 });
+                if (down2) constraints.push({ p1: p, p2: down2, restLength: spacingY * 2, stiffness: 0.5 });
+            }
+        }
+
+        // Create mesh geometry
+        const geometry = new THREE.BufferGeometry();
+        const vertices = new Float32Array(particles.length * 3);
+        const uvs = new Float32Array(particles.length * 2);
+
+        for (let y = 0; y <= SEGMENTS_Y; y++) {
+            for (let x = 0; x <= SEGMENTS_X; x++) {
+                const idx = y * (SEGMENTS_X + 1) + x;
+                uvs[idx * 2] = x / SEGMENTS_X;
+                uvs[idx * 2 + 1] = 1 - y / SEGMENTS_Y;
+            }
+        }
+
+        const indices = [];
+        for (let y = 0; y < SEGMENTS_Y; y++) {
+            for (let x = 0; x < SEGMENTS_X; x++) {
+                const a = y * (SEGMENTS_X + 1) + x;
+                const b = a + 1;
+                const c = a + (SEGMENTS_X + 1);
+                const d = c + 1;
+                indices.push(a, c, b, b, c, d);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
+
+        // Create texture
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, 256);
+        grad.addColorStop(0, '#8b0000');
+        grad.addColorStop(0.3, '#6b0000');
+        grad.addColorStop(0.7, '#4a0000');
+        grad.addColorStop(1, '#2a0000');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.globalAlpha = 0.1;
+        ctx.strokeStyle = '#ffd700';
+        for (let i = 0; i < 256; i += 16) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, 256);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(0, 0, 256, 8);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        // Debug visuals
+        const pointsGeo = new THREE.BufferGeometry();
+        pointsGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(particles.length * 3), 3));
+        const particlePoints = new THREE.Points(pointsGeo, new THREE.PointsMaterial({ color: 0x00ffff, size: 0.03 }));
+        particlePoints.visible = false;
+        scene.add(particlePoints);
+
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(constraints.length * 6), 3));
+        const constraintLines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ color: 0xffff00, opacity: 0.3, transparent: true }));
+        constraintLines.visible = false;
+        scene.add(constraintLines);
+
+        // Mouse interaction
+        let isDragging = false;
+        let dragTarget = null;
+        const mouse = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+
+        container.addEventListener('mousedown', (e) => {
+            const rect = container.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([leftShoulder, rightShoulder]);
+            if (intersects.length > 0) {
+                isDragging = true;
+                dragTarget = intersects[0].object;
+                container.style.cursor = 'grabbing';
+            }
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            if (isDragging && dragTarget) {
+                const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const pos = camera.position.clone().add(dir.multiplyScalar(-camera.position.z / dir.z));
+                dragTarget.position.x = Math.max(-1.5, Math.min(1.5, pos.x));
+                dragTarget.position.y = Math.max(-0.5, Math.min(1.5, pos.y));
+            }
+        });
+
+        const stopDrag = () => {
+            isDragging = false;
+            dragTarget = null;
+            container.style.cursor = 'default';
+        };
+
+        container.addEventListener('mouseup', stopDrag);
+        container.addEventListener('mouseleave', stopDrag);
+
+        // Animation
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.02);
+            const time = clock.getElapsedTime();
+
+            // Auto-animate shoulders when not dragging
+            if (!isDragging) {
+                const speed = 0.8, ampX = 0.15, ampY = 0.08;
+                leftShoulder.position.x = -0.4 + Math.sin(time * speed) * ampX;
+                leftShoulder.position.y = 0.8 + Math.sin(time * speed * 2) * ampY;
+                rightShoulder.position.x = 0.4 + Math.sin(time * speed) * ampX;
+                rightShoulder.position.y = 0.8 + Math.sin(time * speed * 2) * ampY;
+            }
+
+            // Physics simulation
+            const subSteps = 3;
+            for (let step = 0; step < subSteps; step++) {
+                const subDt = dt / subSteps;
+                const gravity = new THREE.Vector3(0, -config.gravity * subDt * subDt, 0);
+                const windX = Math.sin(time * 2.3) * 0.5 + Math.sin(time * 5.1) * 0.2;
+                const windZ = Math.cos(time * 1.7) * 0.8 + 1.0;
+                const wind = new THREE.Vector3(
+                    windX * config.windStrength * subDt * subDt,
+                    Math.sin(time * 3) * config.windStrength * 0.1 * subDt * subDt,
+                    windZ * config.windStrength * subDt * subDt
+                );
+
+                particles.forEach((p, i) => {
+                    if (p.pinned) {
+                        const col = i % (SEGMENTS_X + 1);
+                        if (col <= 2) p.position.lerpVectors(leftShoulder.position, rightShoulder.position, col / SEGMENTS_X);
+                        else if (col >= SEGMENTS_X - 2) p.position.lerpVectors(leftShoulder.position, rightShoulder.position, col / SEGMENTS_X);
+                        p.position.z = 0;
+                        return;
+                    }
+                    p.applyForce(gravity);
+                    p.applyForce(p.position.z < 0 ? wind.clone().multiplyScalar(0.3) : wind);
+                    p.update(config.damping);
+                });
+
+                // Constraint solving
+                for (let iter = 0; iter < config.iterations; iter++) {
+                    constraints.forEach(c => {
+                        const diff = c.p2.position.clone().sub(c.p1.position);
+                        const dist = diff.length();
+                        if (dist === 0) return;
+                        const correction = diff.multiplyScalar((dist - c.restLength) / dist * config.stiffness * c.stiffness * 0.5);
+                        if (!c.p1.pinned && !c.p2.pinned) {
+                            c.p1.position.add(correction);
+                            c.p2.position.sub(correction);
+                        } else if (!c.p1.pinned) {
+                            c.p1.position.add(correction.multiplyScalar(2));
+                        } else if (!c.p2.pinned) {
+                            c.p2.position.sub(correction.multiplyScalar(2));
+                        }
+                    });
+                }
+            }
+
+            // Update mesh
+            const posAttr = mesh.geometry.attributes.position;
+            particles.forEach((p, i) => posAttr.setXYZ(i, p.position.x, p.position.y, p.position.z));
+            posAttr.needsUpdate = true;
+            mesh.geometry.computeVertexNormals();
+
+            // Update debug visuals
+            if (particlePoints.visible) {
+                const ppAttr = particlePoints.geometry.attributes.position;
+                particles.forEach((p, i) => ppAttr.setXYZ(i, p.position.x, p.position.y, p.position.z));
+                ppAttr.needsUpdate = true;
+            }
+            if (constraintLines.visible) {
+                const clAttr = constraintLines.geometry.attributes.position;
+                constraints.forEach((c, i) => {
+                    clAttr.setXYZ(i * 2, c.p1.position.x, c.p1.position.y, c.p1.position.z);
+                    clAttr.setXYZ(i * 2 + 1, c.p2.position.x, c.p2.position.y, c.p2.position.z);
+                });
+                clAttr.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // UI Controls
+        function updateValue(id, value, decimals = 1) {
+            document.getElementById(`${id}-value`).textContent = value.toFixed(decimals);
+        }
+
+        document.getElementById('gravity').addEventListener('input', (e) => {
+            config.gravity = parseFloat(e.target.value);
+            updateValue('gravity', config.gravity);
+        });
+
+        document.getElementById('wind').addEventListener('input', (e) => {
+            config.windStrength = parseFloat(e.target.value);
+            updateValue('wind', config.windStrength);
+        });
+
+        document.getElementById('stiffness').addEventListener('input', (e) => {
+            config.stiffness = parseFloat(e.target.value);
+            updateValue('stiffness', config.stiffness, 2);
+        });
+
+        document.getElementById('damping').addEventListener('input', (e) => {
+            config.damping = parseFloat(e.target.value);
+            updateValue('damping', config.damping, 2);
+        });
+
+        document.getElementById('iterations').addEventListener('input', (e) => {
+            config.iterations = parseInt(e.target.value);
+            updateValue('iterations', config.iterations, 0);
+        });
+
+        document.getElementById('showParticles').addEventListener('change', (e) => {
+            config.showParticles = e.target.checked;
+            particlePoints.visible = config.showParticles;
+        });
+
+        document.getElementById('showConstraints').addEventListener('change', (e) => {
+            config.showConstraints = e.target.checked;
+            constraintLines.visible = config.showConstraints;
+        });
+
+        // Presets
+        function applyPreset(preset) {
+            Object.assign(config, preset);
+            document.getElementById('gravity').value = config.gravity;
+            document.getElementById('wind').value = config.windStrength;
+            document.getElementById('stiffness').value = config.stiffness;
+            document.getElementById('damping').value = config.damping;
+            document.getElementById('iterations').value = config.iterations;
+            updateValue('gravity', config.gravity);
+            updateValue('wind', config.windStrength);
+            updateValue('stiffness', config.stiffness, 2);
+            updateValue('damping', config.damping, 2);
+            updateValue('iterations', config.iterations, 0);
+        }
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const presetName = btn.dataset.preset;
+                if (presets[presetName]) {
+                    applyPreset(presets[presetName]);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
